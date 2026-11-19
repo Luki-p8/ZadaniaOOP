@@ -6,66 +6,47 @@ namespace PeselValidator
     {
         static void Main(string[] args)
         {
-            string pesel = "55030101193";
-
-            if (ValidatePesel.Validate(pesel)) Console.WriteLine($"Pesel {pesel} jest poprawny!");
-            else Console.WriteLine($"Pesel {pesel} jest niepoprawny!");
-
-            if (ValidatePesel.checkGender(pesel) == 'M') Console.WriteLine("Ten pesel należy do mężczyzny!");
-            else Console.WriteLine("Ten pesel należy do kobiety");
         }
     }
 
-    class ValidatePesel
+    public static class Pesel
     {
-        static private readonly string peselPattern = @"\d{11}$";
+        static readonly int[] Weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
 
-        static private int[] digits = new int[11];
-
-        static private readonly int[] weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
-
-        static public bool Validate(string pesel)
+        public static bool IsValid(string pesel)
         {
-            if (Regex.IsMatch(pesel, peselPattern))
+            if (pesel.Length != 11)
             {
-                for (int i = 0; i < pesel.Length; i++)
+                return false;
+            }
+
+            int sum = 0;
+            for (int i = 0; i < 11; i++)
+            {
+                if (pesel[i] < '0' || pesel[i] > '9')
                 {
-                    int temp = int.Parse(pesel[i].ToString());
-                    digits[i] = temp;
+                    return false;
                 }
 
-                if (CheckChecksum(digits)) return true;
-                else return false;
-
-            }
-            else return false;
-        }
-
-        static private bool CheckChecksum(int[] pesel)
-        {
-            int[] temp = new int[weights.Length];
-
-            foreach (int i in weights)
-            {
-                temp[i] = pesel[i] * weights[i];
+                if (i < 10)
+                {
+                    sum += Weights[i] * (pesel[i] - '0');
+                }
             }
 
-            int sum = temp.Sum();
-            int rmod = (sum % 10 == 0) ? 0 : 10 - (sum % 10);
-
-            if (rmod == pesel.Last()) return true;
-            else return false;
+            return (10 - sum % 10) % 10 == pesel[10] - '0';
         }
 
-        static public char checkGender(string pesel)
+        public static string GetBirthDate(string pesel)
         {
-            if (!Validate(pesel)) throw new Exception("Podany pesel nie jest poprawny!");
-
-            int temp = Convert.ToInt32(pesel[9]);
-
-            if (temp % 2 == 0) return 'K';
-            else return 'M';
+            int month = int.Parse(pesel.Substring(2, 2));
+            int year = int.Parse(pesel.Substring(0, 2)) + new[] { 1900, 2000, 2100, 2200, 1800 }[month / 20];
+            return $"{pesel.Substring(4, 2)}.{month % 20:D2}.{year}";
         }
 
+        public static string GetGender(string pesel)
+        {
+            return (pesel[9] - '0') % 2 == 0 ? "kobieta" : "mężczyzna";
+        }
     }
 }
